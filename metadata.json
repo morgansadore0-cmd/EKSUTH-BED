@@ -1,0 +1,6 @@
+{
+  "name": "EKSUTH Automated Bed Allocation System",
+  "description": "A secure, real-time bed allocation and hospital capacity management platform for Ekiti State University Teaching Hospital.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,53 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function hasRole(allowedRoles) {
+      return isAuthenticated() && (getUserData().role in allowedRoles);
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if request.auth.uid == userId || hasRole(['SUPER_ADMIN', 'ADMIN']);
+      allow delete: if hasRole(['SUPER_ADMIN']);
+    }
+
+    match /wards/{document=**} {
+      allow read: if isAuthenticated() && getUserData().role != 'PENDING';
+      allow write: if hasRole(['SUPER_ADMIN', 'ADMIN']);
+    }
+
+    match /beds/{document=**} {
+      allow read: if isAuthenticated() && getUserData().role != 'PENDING';
+      allow write: if hasRole(['SUPER_ADMIN', 'ADMIN', 'BED_MANAGER', 'DOCTOR', 'NURSE', 'ADMISSION_OFFICER']);
+    }
+
+    match /patients/{document=**} {
+      allow read: if isAuthenticated() && getUserData().role != 'PENDING';
+      allow write: if hasRole(['SUPER_ADMIN', 'ADMIN', 'BED_MANAGER', 'DOCTOR', 'NURSE', 'ADMISSION_OFFICER']);
+    }
+
+    match /allocations/{document=**} {
+      allow read: if isAuthenticated() && getUserData().role != 'PENDING';
+      allow write: if hasRole(['SUPER_ADMIN', 'ADMIN', 'BED_MANAGER', 'DOCTOR', 'NURSE', 'ADMISSION_OFFICER']);
+    }
+
+    match /auditLogs/{document=**} {
+      allow read: if hasRole(['SUPER_ADMIN', 'ADMIN']);
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+
+    match /notifications/{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}
