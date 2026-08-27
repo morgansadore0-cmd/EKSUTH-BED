@@ -5,11 +5,13 @@ import { User, Role } from '../types';
 import { toast } from 'react-toastify';
 import { clsx } from 'clsx';
 import { useAuth } from '../contexts/AuthContext';
-import { UserCheck } from 'lucide-react';
+import { UserCheck, UserPlus } from 'lucide-react';
+import CreateAccountModal from '../components/Staff/CreateAccountModal';
 
 export default function Staff() {
   const [staff, setStaff] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { userData, isAdmin, isSuperAdmin } = useAuth();
 
   useEffect(() => {
@@ -45,7 +47,7 @@ export default function Staff() {
     }
   };
 
-  const activeStaff = staff.filter(user => user.role !== 'PENDING' && user.role !== 'REJECTED');
+  const activeStaff = staff.filter(user => user.status !== 'PENDING_APPROVAL' && user.status !== 'REJECTED');
 
   const StaffTable = ({ users, title }: { users: User[], title: string }) => (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
@@ -89,12 +91,8 @@ export default function Staff() {
                     value={user.role} 
                     onChange={(e) => handleRoleChange(user.id, e.target.value as Role)}
                     disabled={!isAdmin || user.id === userData?.id || (!isSuperAdmin && user.role === 'SUPER_ADMIN')}
-                    className={clsx(
-                      "block w-full rounded border-slate-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-xs py-1.5",
-                      user.role === 'PENDING' ? "bg-orange-50 border-orange-200 text-orange-800 font-bold" : ""
-                    )}
+                    className="block w-full rounded border-slate-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-xs py-1.5"
                   >
-                    <option value="PENDING">Pending Approval</option>
                     <option value="VIEWER">Viewer</option>
                     <option value="NURSE">Nurse</option>
                     <option value="DOCTOR">Doctor</option>
@@ -141,9 +139,19 @@ export default function Staff() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Administrator Database</h1>
-        <p className="text-sm text-slate-500 mt-1">Approve pending staff accounts and manage system privileges</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Administrator Database</h1>
+          <p className="text-sm text-slate-500 mt-1">Approve pending staff accounts and manage system privileges</p>
+        </div>
+        {isAdmin && (
+          <button 
+            onClick={() => setIsCreateModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 shadow-sm transition-colors text-sm font-medium shrink-0"
+          >
+            <UserPlus className="w-4 h-4" /> Provision Account
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -153,6 +161,11 @@ export default function Staff() {
       ) : (
         <StaffTable users={activeStaff} title="Active Staff Directory" />
       )}
+
+      <CreateAccountModal 
+        isOpen={isCreateModalOpen} 
+        onClose={() => setIsCreateModalOpen(false)} 
+      />
     </div>
   );
 }

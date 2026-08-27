@@ -48,6 +48,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   if (isAdmin) {
     navItems.push({ name: 'Pending Approvals', to: '/approvals', icon: ShieldCheck });
     navItems.push({ name: 'Staff Management', to: '/staff', icon: UserCog });
+    navItems.push({ name: 'Staff Registry', to: '/staff-registry', icon: Users });
     navItems.push({ name: 'Audit Logs', to: '/audit-logs', icon: ShieldAlert });
     navItems.push({ name: 'Settings', to: '/settings', icon: Settings });
   }

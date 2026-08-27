@@ -17,7 +17,7 @@ export interface User {
   staffId: string;
   department: string;
   phone: string;
-  status: 'ACTIVE' | 'SUSPENDED';
+  status: 'ACTIVE' | 'SUSPENDED' | 'PENDING_APPROVAL' | 'REJECTED' | 'DISABLED';
   createdAt: number;
   lastLogin: number;
 }
@@ -112,4 +112,21 @@ export interface Notification {
   isRead: boolean;
   timestamp: number;
   userId?: string; // Optional: if targeting specific user
+}
+
+export type StaffRegistryStatus = 'AVAILABLE' | 'ASSIGNED' | 'SUSPENDED' | 'DEACTIVATED';
+
+export interface StaffRegistry {
+  id: string;
+  staffId: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  department: string;
+  role: Role;
+  status: StaffRegistryStatus;
+  linkedUserId?: string | null;
+  createdBy: string;
+  createdAt: number;
+  updatedAt: number;
 }

@@ -16,6 +16,16 @@ const INITIAL_WARDS = [
   { code: 'ICU', name: 'Intensive Care Unit', capacity: 20, type: 'ICU' },
 ];
 
+const DEMO_STAFF = [
+  { staffId: 'EKSUTH-SADM-2026-001', role: 'SUPER_ADMIN', name: 'Demo Super Admin' },
+  { staffId: 'EKSUTH-ADM-2026-001', role: 'ADMIN', name: 'Demo Admin' },
+  { staffId: 'EKSUTH-BM-2026-001', role: 'BED_MANAGER', name: 'Demo Bed Manager' },
+  { staffId: 'EKSUTH-DOC-2026-001', role: 'DOCTOR', name: 'Demo Doctor' },
+  { staffId: 'EKSUTH-NUR-2026-001', role: 'NURSE', name: 'Demo Nurse' },
+  { staffId: 'EKSUTH-AO-2026-001', role: 'ADMISSION_OFFICER', name: 'Demo Admission Officer' },
+  { staffId: 'EKSUTH-VWR-2026-001', role: 'VIEWER', name: 'Demo Viewer' },
+];
+
 export const seedDatabase = async () => {
   try {
     const wardsSnapshot = await getDocs(collection(db, 'wards'));
@@ -81,8 +91,29 @@ export const seedDatabase = async () => {
       }
     }
 
+    // Seed Demo Staff Registry
+    const staffRegistrySnapshot = await getDocs(collection(db, 'staffRegistry'));
+    if (staffRegistrySnapshot.empty) {
+      for (const staffData of DEMO_STAFF) {
+        const staffRef = doc(db, 'staffRegistry', staffData.staffId);
+        batch.set(staffRef, {
+          staffId: staffData.staffId,
+          fullName: staffData.name,
+          email: `${staffData.staffId.toLowerCase()}@eksuth.demo`,
+          phone: '08000000000',
+          department: 'Demo',
+          role: staffData.role,
+          status: 'AVAILABLE',
+          linkedUserId: null,
+          createdBy: 'system',
+          createdAt: now,
+          updatedAt: now
+        });
+      }
+    }
+
     await batch.commit();
-    toast.success(`Successfully seeded ${INITIAL_WARDS.length} wards and ${totalBedsCreated} beds.`);
+    toast.success(`Successfully seeded database with wards, beds, and demo staff.`);
   } catch (error) {
     console.error('Error seeding database:', error);
     toast.error('Failed to seed database.');

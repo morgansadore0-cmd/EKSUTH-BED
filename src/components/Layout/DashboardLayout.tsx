@@ -2,9 +2,13 @@ import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import { useMaintenanceMonitor } from '../../hooks/useMaintenanceMonitor';
 
 export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  // Initialize global maintenance monitoring for admins
+  useMaintenanceMonitor();
 
   return (
     <div className="h-screen bg-[#f8fafc] text-slate-800 flex font-sans overflow-hidden">

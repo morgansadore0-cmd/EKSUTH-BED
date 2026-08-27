@@ -9,6 +9,7 @@ import { toast } from 'react-toastify';
 import { clsx } from 'clsx';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
 import MaintenanceAlert from '../components/Dashboard/MaintenanceAlert';
+import StaffStats from '../components/Dashboard/StaffStats';
 
 export default function Dashboard() {
   const { isSuperAdmin, isAdmin } = useAuth();
@@ -136,6 +137,7 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+          {isAdmin && <StaffStats />}
         </>
       )}
     </div>

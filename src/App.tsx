@@ -20,6 +20,7 @@ import Allocation from './pages/Allocation';
 import Wards from './pages/Wards';
 import Staff from './pages/Staff';
 import PendingApprovals from './pages/PendingApprovals';
+import StaffRegistry from './pages/StaffRegistry';
 import AuditLogs from './pages/AuditLogs';
 import Placeholder from './pages/Placeholder';
 
@@ -65,6 +66,14 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
                   <PendingApprovals />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="staff-registry" 
+              element={
+                <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
+                  <StaffRegistry />
                 </ProtectedRoute>
               } 
             />

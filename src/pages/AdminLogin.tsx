@@ -49,7 +49,13 @@ export default function AdminLogin() {
       await handleAuthSuccess(userCredential.user);
     } catch (error: any) {
       console.error(error);
-      toast.error("Unable to sign in. Please check your email and password.");
+      if (error.code === 'auth/network-request-failed') {
+        toast.error("Network error. Please check your connection or try opening the app in a new tab.");
+      } else if (error.code === 'auth/invalid-credential') {
+        toast.error("Invalid credentials. Please check your email and password.");
+      } else {
+        toast.error("Unable to sign in. Please check your email and password.");
+      }
     } finally {
       setLoading(false);
     }
@@ -63,7 +69,13 @@ export default function AdminLogin() {
       await handleAuthSuccess(userCredential.user);
     } catch (error: any) {
       console.error(error);
-      toast.error("Google sign-in failed. Please try again.");
+      if (error.code === 'auth/network-request-failed') {
+        toast.error("Network error. If you are using Google Sign-In inside the preview, please open the app in a New Tab, or use email/password instead.");
+      } else if (error.code === 'auth/invalid-credential') {
+        toast.error("Invalid credentials. Please try again.");
+      } else {
+        toast.error("Google sign-in failed. Please try again.");
+      }
     } finally {
       setLoading(false);
     }

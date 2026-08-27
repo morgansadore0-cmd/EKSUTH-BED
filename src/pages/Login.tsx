@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, query, collection, where, getDocs, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
-import { User, Role } from '../types';
+import { User, StaffRegistry } from '../types';
 import { toast } from 'react-toastify';
 import logo from '../assets/images/1146_company_logo.jpg';
 import building from '../assets/images/images.jpg';
@@ -18,27 +18,67 @@ export default function Login() {
   const from = location.state?.from?.pathname || "/dashboard";
 
   const handleAuthSuccess = async (user: any) => {
-    // Check if user document exists
     const userRef = doc(db, 'users', user.uid);
     const userSnap = await getDoc(userRef);
     
     if (!userSnap.exists()) {
-      // Create new pending user profile for Google Sign-in users who aren't registered yet
+      // Check if their email exists in the staff registry!
+      const q = query(collection(db, 'staffRegistry'), where('email', '==', user.email));
+      const querySnapshot = await getDocs(q);
+      
+      if (querySnapshot.empty) {
+        await auth.signOut();
+        toast.error("No authorized EKSUTH staff account was found for this login. Please contact the hospital administrator.");
+        return;
+      }
+      
+      const registryDoc = querySnapshot.docs[0];
+      const registryData = registryDoc.data() as StaffRegistry;
+      
+      if (registryData.status === 'ASSIGNED' && registryData.linkedUserId && registryData.linkedUserId !== user.uid) {
+        await auth.signOut();
+        toast.error("This staff email is already linked to another account.");
+        return;
+      }
+
+      if (registryData.status === 'SUSPENDED' || registryData.status === 'DEACTIVATED') {
+        await auth.signOut();
+        toast.error("This staff account is currently inactive. Please contact the hospital administrator.");
+        return;
+      }
+      
+      // Create user doc based on Registry data
       const newUser: User = {
         id: user.uid,
-        name: user.displayName || 'Staff Member',
+        name: registryData.fullName || user.displayName || 'Staff Member',
         email: user.email || '',
-        role: 'PENDING', // Require approval by default
-        staffId: 'PENDING-' + Math.floor(Math.random() * 10000),
-        department: 'Unassigned',
-        phone: '',
-        status: 'ACTIVE',
+        role: registryData.role,
+        staffId: registryData.staffId,
+        department: registryData.department,
+        phone: registryData.phone || '',
+        status: 'PENDING_APPROVAL',
         createdAt: Date.now(),
         lastLogin: Date.now(),
       };
+      
       await setDoc(userRef, newUser);
-      toast.info("Account created. Please wait for an administrator to approve your access.");
+      
+      await updateDoc(doc(db, 'staffRegistry', registryDoc.id), {
+        status: 'ASSIGNED',
+        linkedUserId: user.uid,
+        updatedAt: Date.now()
+      });
+      
+      toast.info("Account created successfully. Please wait for an administrator to approve your access.");
+      await auth.signOut();
+      return;
     } else {
+      const userData = userSnap.data() as User;
+      if (userData.status === 'SUSPENDED' || userData.status === 'REJECTED' || userData.status === 'DISABLED') {
+         await auth.signOut();
+         toast.error("This account is currently inactive or suspended. Please contact the hospital administrator.");
+         return;
+      }
       // Update last login
       await setDoc(userRef, { lastLogin: Date.now() }, { merge: true });
     }
@@ -48,13 +88,20 @@ export default function Login() {
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return toast.error("Please enter email and password");
+    
     setLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       await handleAuthSuccess(userCredential.user);
     } catch (error: any) {
       console.error(error);
-      toast.error("Unable to sign in. Please check your email and password.");
+      if (error.code === 'auth/network-request-failed') {
+        toast.error("Network error. Please check your connection or try opening the app in a new tab.");
+      } else if (error.code === 'auth/invalid-credential') {
+        toast.error("Invalid credentials. Please check your email and password.");
+      } else {
+        toast.error("Unable to sign in. Please check your email and password.");
+      }
     } finally {
       setLoading(false);
     }
@@ -68,7 +115,13 @@ export default function Login() {
       await handleAuthSuccess(userCredential.user);
     } catch (error: any) {
       console.error(error);
-      toast.error("Google sign-in failed. Please try again.");
+      if (error.code === 'auth/network-request-failed') {
+        toast.error("Network error. If you are using Google Sign-In inside the preview, please open the app in a New Tab, or use email/password instead.");
+      } else if (error.code === 'auth/invalid-credential') {
+        toast.error("Invalid credentials. Please try again.");
+      } else {
+        toast.error("Google sign-in failed. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -100,6 +153,7 @@ export default function Login() {
             Sign in to access the EKSUTH Automated Bed Allocation System.
           </p>
         </div>
+        
         <form className="mt-8 space-y-6" onSubmit={handleEmailLogin}>
           <div className="space-y-4">
             <div>

@@ -1,8 +1,8 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-const firebaseConfig = {
+export const firebaseConfig = {
   projectId: "gen-lang-client-0829665348",
   appId: "1:761281725088:web:e0077c0860ef4a601fbfc5",
   apiKey: "AIzaSyBxVlPdAoUS1pPfOX3KLFNv17eQPR42jew",
@@ -11,8 +11,8 @@ const firebaseConfig = {
   messagingSenderId: "761281725088",
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase securely (preventing multiple instances during HMR)
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 // Initialize Firebase services
 export const auth = getAuth(app);

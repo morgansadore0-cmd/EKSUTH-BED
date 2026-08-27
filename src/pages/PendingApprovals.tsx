@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { collection, onSnapshot, query, doc, updateDoc, where, deleteDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { User, Role } from '../types';
 import { toast } from 'react-toastify';
@@ -11,10 +11,10 @@ export default function PendingApprovals() {
   const [pendingStaff, setPendingStaff] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const { userData, isAdmin, isSuperAdmin } = useAuth();
-  const [selectedRoles, setSelectedRoles] = useState<Record<string, Role>>({});
 
   useEffect(() => {
-    const q = query(collection(db, 'users'), where('role', '==', 'PENDING'));
+    // Query users with PENDING_APPROVAL status
+    const q = query(collection(db, 'users'), where('status', '==', 'PENDING_APPROVAL'));
     const unsub = onSnapshot(q, (snapshot) => {
       setPendingStaff(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User)));
       setLoading(false);
@@ -22,26 +22,13 @@ export default function PendingApprovals() {
     return () => unsub();
   }, []);
 
-  const handleRoleSelection = (userId: string, role: Role) => {
-    setSelectedRoles(prev => ({ ...prev, [userId]: role }));
-  };
-
   const handleApprove = async (userId: string) => {
-    const newRole = selectedRoles[userId];
-    if (!newRole || newRole === 'PENDING' || newRole === 'REJECTED') {
-      return toast.error("Please select a valid role to approve this user.");
-    }
-
     if (!isAdmin) {
       return toast.error("Only Administrators can approve accounts.");
     }
     
-    if (newRole === 'SUPER_ADMIN' && !isSuperAdmin) {
-      return toast.error("Only Super Admins can grant Super Admin privileges.");
-    }
-    
     try {
-      await updateDoc(doc(db, 'users', userId), { role: newRole });
+      await updateDoc(doc(db, 'users', userId), { status: 'ACTIVE' });
       toast.success("Account approved successfully");
     } catch (error) {
       console.error(error);
@@ -53,11 +40,10 @@ export default function PendingApprovals() {
     if (!isAdmin) {
       return toast.error("Only Administrators can reject accounts.");
     }
-
     if (window.confirm("Are you sure you want to reject this registration request? This action cannot be undone.")) {
       try {
-        await deleteDoc(doc(db, 'users', userId));
-        toast.success("Registration request rejected and removed.");
+        await updateDoc(doc(db, 'users', userId), { status: 'REJECTED' });
+        toast.success("Registration request rejected.");
       } catch (error) {
         console.error(error);
         toast.error("Failed to reject registration request");
@@ -66,8 +52,8 @@ export default function PendingApprovals() {
   };
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
-      <div>
+    <div className="space-y-6 max-w-6xl mx-auto flex flex-col h-[calc(100vh-8rem)]">
+      <div className="shrink-0">
         <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
           <ShieldCheck className="w-7 h-7 text-emerald-600" />
           Pending Approvals
@@ -80,18 +66,18 @@ export default function PendingApprovals() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-700"></div>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
-          <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-1 flex flex-col min-h-0">
+          <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center shrink-0">
             <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Awaiting Action ({pendingStaff.length})</h2>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto flex-1">
             <table className="min-w-full divide-y divide-slate-200">
-              <thead className="bg-slate-50">
+              <thead className="bg-slate-50 sticky top-0">
                 <tr>
-                  <th className="px-6 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">Applicant Details</th>
+                  <th className="px-6 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">Staff Information</th>
                   <th className="px-6 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">Contact & Dept</th>
+                  <th className="px-6 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">Requested Role</th>
                   <th className="px-6 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">Registration Date</th>
-                  <th className="px-6 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">Assign Role</th>
                   <th className="px-6 py-3 text-right text-[10px] font-bold text-slate-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
@@ -120,24 +106,13 @@ export default function PendingApprovals() {
                         <span className="text-[10px] text-slate-500">{user.email}</span>
                       </div>
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                       <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border bg-emerald-50 text-emerald-700 border-emerald-200">
+                        {user.role.replace('_', ' ')}
+                      </span>
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-600">
                       {new Date(user.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <select 
-                        value={selectedRoles[user.id] || ''} 
-                        onChange={(e) => handleRoleSelection(user.id, e.target.value as Role)}
-                        className="block w-full min-w-[140px] rounded border-slate-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-xs py-1.5 bg-white"
-                      >
-                        <option value="" disabled>Select Role...</option>
-                        <option value="VIEWER">Viewer</option>
-                        <option value="NURSE">Nurse</option>
-                        <option value="DOCTOR">Doctor</option>
-                        <option value="ADMISSION_OFFICER">Admission Officer</option>
-                        <option value="BED_MANAGER">Bed Manager</option>
-                        <option value="ADMIN">Administrator</option>
-                        {isSuperAdmin && <option value="SUPER_ADMIN">Super Admin</option>}
-                      </select>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-xs font-medium">
                       <div className="flex items-center justify-end gap-2">
@@ -150,8 +125,7 @@ export default function PendingApprovals() {
                         </button>
                         <button 
                           onClick={() => handleApprove(user.id)}
-                          disabled={!selectedRoles[user.id]}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-transparent text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed rounded shadow-sm transition-colors"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-transparent text-white bg-emerald-600 hover:bg-emerald-700 rounded shadow-sm transition-colors"
                         >
                           <CheckCircle className="w-3.5 h-3.5" />
                           Approve
