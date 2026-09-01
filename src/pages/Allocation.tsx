@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { collection, query, getDocs, doc, runTransaction, where, getDoc } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { db, getCollectionName } from '../firebase/config';
 import { Patient, Bed, Ward, Allocation as AllocationType, AuditLog } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-toastify';
@@ -26,7 +26,7 @@ export default function Allocation() {
     if (!patientId) {
       const loadWaitingPatients = async () => {
         setLoading(true);
-        const q = query(collection(db, 'patients'), where('admissionStatus', '==', 'WAITING'));
+        const q = query(collection(db, getCollectionName('patients')), where('admissionStatus', '==', 'WAITING'));
         const snap = await getDocs(q);
         setPatients(snap.docs.map(d => ({ id: d.id, ...d.data() } as Patient)));
         setLoading(false);
@@ -56,8 +56,8 @@ export default function Allocation() {
     setLoading(true);
 
     try {
-      const bedsSnap = await getDocs(query(collection(db, 'beds'), where('status', '==', 'AVAILABLE')));
-      const wardsSnap = await getDocs(collection(db, 'wards'));
+      const bedsSnap = await getDocs(query(collection(db, getCollectionName('beds')), where('status', '==', 'AVAILABLE')));
+      const wardsSnap = await getDocs(collection(db, getCollectionName('wards')));
       
       const availableBeds = bedsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Bed));
       const wards = wardsSnap.docs.reduce((acc, doc) => {
@@ -139,8 +139,8 @@ export default function Allocation() {
     setAllocating(true);
     const bedRef = doc(db, 'beds', recommendation.bed.id);
     const patientRef = doc(db, 'patients', patient.id);
-    const allocRef = doc(collection(db, 'allocations'));
-    const auditRef = doc(collection(db, 'auditLogs'));
+    const allocRef = doc(collection(db, getCollectionName('allocations')));
+    const auditRef = doc(collection(db, getCollectionName('auditLogs')));
 
     try {
       await runTransaction(db, async (transaction) => {

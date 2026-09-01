@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
-import { db } from '../../firebase/config';
+import { db, getCollectionName } from '../../firebase/config';
 import { AuditLog, Allocation, Bed } from '../../types';
 import { Clock, User, Activity, AlertCircle, X, CheckCircle, Sparkles, Wrench } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -36,13 +36,13 @@ export default function BedTimelineModal({ isOpen, onClose, bed }: BedTimelineMo
       setLoading(true);
       try {
         const auditQuery = query(
-          collection(db, 'auditLogs'),
+          collection(db, getCollectionName('auditLogs')),
           where('entityId', '==', bed.id),
           where('entity', '==', 'BED')
         );
 
         const allocQuery = query(
-          collection(db, 'allocations'),
+          collection(db, getCollectionName('allocations')),
           where('bedId', '==', bed.id)
         );
 

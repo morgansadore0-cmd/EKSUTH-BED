@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { collection, onSnapshot, query } from 'firebase/firestore';
-import { db } from '../../firebase/config';
+import { db, getCollectionName } from '../../firebase/config';
 import { User } from '../../types';
 import { Users, UserCog, UserCheck, ShieldAlert, Activity, AlertCircle } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -9,7 +9,7 @@ export default function StaffStats() {
   const [staff, setStaff] = useState<User[]>([]);
   
   useEffect(() => {
-    const q = query(collection(db, 'users'));
+    const q = query(collection(db, getCollectionName('users')));
     const unsub = onSnapshot(q, (snapshot) => {
       setStaff(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User)));
     });

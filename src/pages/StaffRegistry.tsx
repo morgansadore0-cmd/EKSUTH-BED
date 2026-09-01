@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { collection, onSnapshot, query, addDoc, setDoc, doc, updateDoc, getDocs, where, writeBatch } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { db, getCollectionName } from '../firebase/config';
 import { StaffRegistry, StaffRegistryStatus, Role } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-toastify';
@@ -37,7 +37,7 @@ export default function StaffRegistryPage() {
   useEffect(() => {
     if (!isAdmin) return;
     
-    const q = query(collection(db, 'staffRegistry'));
+    const q = query(collection(db, getCollectionName('staffRegistry')));
     const unsub = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StaffRegistry));
       setRegistry(data.sort((a, b) => b.createdAt - a.createdAt));
@@ -57,7 +57,7 @@ export default function StaffRegistryPage() {
     const prefix = `EKSUTH-${code}-${year}-`;
     
     // Query to find the highest number for this prefix
-    const q = query(collection(db, 'staffRegistry'), where('staffId', '>=', prefix), where('staffId', '<=', prefix + '\uf8ff'));
+    const q = query(collection(db, getCollectionName('staffRegistry')), where('staffId', '>=', prefix), where('staffId', '<=', prefix + '\uf8ff'));
     const snapshot = await getDocs(q);
     
     let maxNum = 0;
@@ -101,7 +101,7 @@ export default function StaffRegistryPage() {
       
       // Audit log
       const batch = writeBatch(db);
-      const auditRef = doc(collection(db, 'auditLogs'));
+      const auditRef = doc(collection(db, getCollectionName('auditLogs')));
       batch.set(auditRef, {
         userId: userData?.id || 'sys',
         userName: userData?.name || 'System',
@@ -139,7 +139,7 @@ export default function StaffRegistryPage() {
       toast.success(`Status updated to ${newStatus}`);
       
       // Audit log
-      await addDoc(collection(db, 'auditLogs'), {
+      await addDoc(collection(db, getCollectionName('auditLogs')), {
         userId: userData?.id || 'sys',
         userName: userData?.name || 'System',
         action: 'STAFF_REGISTRY_STATUS_UPDATED',

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { collection, onSnapshot, query } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { db, getCollectionName } from '../firebase/config';
 import { Ward, Bed } from '../types';
 
 export default function Wards() {
@@ -9,11 +9,11 @@ export default function Wards() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubWards = onSnapshot(collection(db, 'wards'), (snapshot) => {
+    const unsubWards = onSnapshot(collection(db, getCollectionName('wards')), (snapshot) => {
       setWards(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ward)));
     });
 
-    const unsubBeds = onSnapshot(query(collection(db, 'beds')), (snapshot) => {
+    const unsubBeds = onSnapshot(query(collection(db, getCollectionName('beds'))), (snapshot) => {
       setBeds(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Bed)));
       setLoading(false);
     });

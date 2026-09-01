@@ -17,7 +17,6 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { auth } from '../../firebase/config';
 import logo from '../../assets/images/1146_company_logo.jpg';
 import { clsx } from 'clsx';
 
@@ -27,10 +26,10 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
-  const { userData, isAdmin } = useAuth();
+  const { userData, isAdmin, logoutMock } = useAuth();
 
   const handleLogout = async () => {
-    await auth.signOut();
+    logoutMock();
   };
 
   const navItems = [
@@ -43,6 +42,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     { name: 'Transfers', to: '/transfers', icon: ArrowRightLeft },
     { name: 'Reports', to: '/reports', icon: BarChart3 },
     { name: 'Notifications', to: '/notifications', icon: Bell },
+    { name: 'Settings', to: '/settings', icon: Settings },
   ];
 
   if (isAdmin) {
@@ -50,7 +50,6 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     navItems.push({ name: 'Staff Management', to: '/staff', icon: UserCog });
     navItems.push({ name: 'Staff Registry', to: '/staff-registry', icon: Users });
     navItems.push({ name: 'Audit Logs', to: '/audit-logs', icon: ShieldAlert });
-    navItems.push({ name: 'Settings', to: '/settings', icon: Settings });
   }
 
   return (

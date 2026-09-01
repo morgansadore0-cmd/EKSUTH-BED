@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -23,9 +24,11 @@ import PendingApprovals from './pages/PendingApprovals';
 import StaffRegistry from './pages/StaffRegistry';
 import AuditLogs from './pages/AuditLogs';
 import Placeholder from './pages/Placeholder';
+import Settings from './pages/Settings';
 
 function App() {
   return (
+    <ThemeProvider>
     <AuthProvider>
       <Router>
         <Routes>
@@ -52,7 +55,7 @@ function App() {
                 </ProtectedRoute>
               } 
             />
-            <Route path="settings" element={<Placeholder />} />
+            <Route path="settings" element={<Settings />} />
             <Route 
               path="staff" 
               element={
@@ -84,6 +87,7 @@ function App() {
       </Router>
       <ToastContainer position="top-right" autoClose={3000} aria-label="Notifications" />
     </AuthProvider>
+    </ThemeProvider>
   );
 }
 

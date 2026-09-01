@@ -1,19 +1,12 @@
 import React, { useState } from 'react';
-import { initializeApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
-import { doc, setDoc, addDoc, collection } from 'firebase/firestore';
-import { db, firebaseConfig } from '../../firebase/config';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '../../firebase/config';
 import { User, Role } from '../../types';
 import { toast } from 'react-toastify';
 import { X, UserPlus, Loader2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
-interface CreateAccountModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-export default function CreateAccountModal({ isOpen, onClose }: CreateAccountModalProps) {
+export default function CreateAccountModal({ onClose }: { onClose: () => void }) {
   const { isSuperAdmin } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -26,14 +19,8 @@ export default function CreateAccountModal({ isOpen, onClose }: CreateAccountMod
     role: 'NURSE' as Role
   });
 
-  if (!isOpen) return null;
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    let value = e.target.value;
-    if (e.target.name === 'staffId') {
-      value = value.toUpperCase().trim();
-    }
-    setFormData({ ...formData, [e.target.name]: value });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -41,29 +28,23 @@ export default function CreateAccountModal({ isOpen, onClose }: CreateAccountMod
     setLoading(true);
 
     try {
-      // Create a secondary app instance to create the user without logging out the current admin
-      const secondaryApp = initializeApp(firebaseConfig, 'SecondaryApp');
-      const secondaryAuth = getAuth(secondaryApp);
+      const mockUid = 'user_' + Date.now().toString();
 
-      const userCredential = await createUserWithEmailAndPassword(secondaryAuth, formData.email, formData.password);
-      const user = userCredential.user;
-      
       const newUser: User = {
-        id: user.uid,
+        id: mockUid,
         name: formData.fullName,
         email: formData.email,
         role: formData.role,
         staffId: formData.staffId,
         department: formData.department,
         phone: formData.phone,
-        status: 'ACTIVE', // Because admin is provisioning, it is immediately active
+        status: 'ACTIVE',
         createdAt: Date.now(),
         lastLogin: Date.now(),
       };
       
-      await setDoc(doc(db, 'users', user.uid), newUser);
+      await setDoc(doc(db, 'users', mockUid), newUser);
       
-      // Also register them in the staffRegistry
       await setDoc(doc(db, 'staffRegistry', formData.staffId), {
         staffId: formData.staffId,
         fullName: formData.fullName,
@@ -72,14 +53,11 @@ export default function CreateAccountModal({ isOpen, onClose }: CreateAccountMod
         department: formData.department,
         role: formData.role,
         status: 'ASSIGNED',
-        linkedUserId: user.uid,
+        linkedUserId: mockUid,
         createdBy: 'admin_provision',
         createdAt: Date.now(),
         updatedAt: Date.now()
       });
-      
-      // Sign out the secondary auth so it doesn't linger
-      await signOut(secondaryAuth);
       
       toast.success("Account created and provisioned successfully.");
       onClose();

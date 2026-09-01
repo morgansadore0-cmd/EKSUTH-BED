@@ -17,3 +17,8 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 // Initialize Firebase services
 export const auth = getAuth(app);
 export const db = getFirestore(app, "ai-studio-eksuthautomatedb-11633c3c-efde-4345-bd5a-8516ed399d58");
+
+export const getCollectionName = (name: string) => {
+  const isDemo = localStorage.getItem('demo_mode') === 'true';
+  return isDemo ? `demo_${name}` : name;
+};

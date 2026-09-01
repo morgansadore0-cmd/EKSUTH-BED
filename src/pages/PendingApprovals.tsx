@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { collection, onSnapshot, query, where, doc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { db, getCollectionName } from '../firebase/config';
 import { User, Role } from '../types';
 import { toast } from 'react-toastify';
 import { clsx } from 'clsx';
@@ -14,7 +14,7 @@ export default function PendingApprovals() {
 
   useEffect(() => {
     // Query users with PENDING_APPROVAL status
-    const q = query(collection(db, 'users'), where('status', '==', 'PENDING_APPROVAL'));
+    const q = query(collection(db, getCollectionName('users')), where('status', '==', 'PENDING_APPROVAL'));
     const unsub = onSnapshot(q, (snapshot) => {
       setPendingStaff(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User)));
       setLoading(false);

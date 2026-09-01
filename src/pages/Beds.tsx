@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { collection, onSnapshot, query, updateDoc, doc, writeBatch } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { db, getCollectionName } from '../firebase/config';
 import { Bed, Ward, BedStatus } from '../types';
 import { Search, Filter, X } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -8,6 +8,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-toastify';
 import BedHistoryLog from '../components/Beds/BedHistoryLog';
 import BedTimelineModal from '../components/Beds/BedTimelineModal';
+import ManualRegistrationModal from '../components/Beds/ManualRegistrationModal';
+import { UserPlus } from 'lucide-react';
 import MaintenanceAlert from '../components/Dashboard/MaintenanceAlert';
 
 export default function Beds() {
@@ -16,15 +18,18 @@ export default function Beds() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [wardTypeFilter, setWardTypeFilter] = useState<string>('ALL');
+  const [floorFilter, setFloorFilter] = useState<string>('ALL');
   const [selectedBed, setSelectedBed] = useState<Bed | null>(null);
   const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false);
+  const [isManualRegModalOpen, setIsManualRegModalOpen] = useState(false);
   const { hasRole, userData } = useAuth();
   
   const canEditBeds = hasRole(['SUPER_ADMIN', 'ADMIN', 'BED_MANAGER', 'NURSE', 'DOCTOR', 'ADMISSION_OFFICER']);
 
   useEffect(() => {
     // Load Wards
-    const unsubWards = onSnapshot(collection(db, 'wards'), (snapshot) => {
+    const unsubWards = onSnapshot(collection(db, getCollectionName('wards')), (snapshot) => {
       const wardsData: Record<string, Ward> = {};
       snapshot.forEach(doc => {
         wardsData[doc.id] = { id: doc.id, ...doc.data() } as Ward;
@@ -33,7 +38,7 @@ export default function Beds() {
     });
 
     // Load Beds
-    const q = query(collection(db, 'beds'));
+    const q = query(collection(db, getCollectionName('beds')));
     const unsubBeds = onSnapshot(q, (snapshot) => {
       const bedsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Bed));
       setBeds(bedsData);
@@ -68,7 +73,7 @@ export default function Beds() {
         updatedAt: Date.now()
       });
 
-      const auditRef = doc(collection(db, 'auditLogs'));
+      const auditRef = doc(collection(db, getCollectionName('auditLogs')));
       batch.set(auditRef, {
         userId: userData?.id || 'sys',
         userName: userData?.name || 'System',
@@ -87,10 +92,16 @@ export default function Beds() {
     }
   };
 
+  const uniqueWardTypes = Array.from(new Set(Object.values(wards).map((w: any) => w.type))).filter(Boolean);
+  const uniqueFloors = Array.from(new Set(Object.values(wards).map((w: any) => w.floor || 'Unknown'))).filter(Boolean);
+
   const filteredBeds = beds.filter(bed => {
+    const ward = wards[bed.wardId] as any;
     const matchesSearch = bed.bedNumber.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'ALL' || bed.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesWardType = wardTypeFilter === 'ALL' || (ward && ward.type === wardTypeFilter);
+    const matchesFloor = floorFilter === 'ALL' || (ward && (ward.floor || 'Unknown') === floorFilter);
+    return matchesSearch && matchesStatus && matchesWardType && matchesFloor;
   });
 
   const getStatusColor = (status: string) => {
@@ -116,35 +127,72 @@ export default function Beds() {
 
       {!loading && <MaintenanceAlert beds={beds} />}
 
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-4 shrink-0">
-        <div className="relative flex-1">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-gray-400" />
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-4 shrink-0">
+        <div className="flex flex-col lg:flex-row gap-4">
+          <div className="relative flex-1">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search bed number..."
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
-          <input
-            type="text"
-            placeholder="Search bed number..."
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <div className="relative w-full sm:w-64">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Filter className="h-5 w-5 text-gray-400" />
+          
+          <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
+            <div className="relative w-full sm:w-40 xl:w-48">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Filter className="h-5 w-5 text-gray-400" />
+              </div>
+              <select
+                className="block w-full pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm appearance-none"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="ALL">All Statuses</option>
+                <option value="AVAILABLE">Available</option>
+                <option value="OCCUPIED">Occupied</option>
+                <option value="RESERVED">Reserved</option>
+                <option value="CLEANING">Cleaning</option>
+                <option value="MAINTENANCE">Maintenance</option>
+              </select>
+            </div>
+
+            <div className="relative w-full sm:w-40 xl:w-48">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Filter className="h-5 w-5 text-gray-400" />
+              </div>
+              <select
+                className="block w-full pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm appearance-none"
+                value={wardTypeFilter}
+                onChange={(e) => setWardTypeFilter(e.target.value)}
+              >
+                <option value="ALL">All Ward Types</option>
+                {uniqueWardTypes.map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="relative w-full sm:w-40 xl:w-48">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Filter className="h-5 w-5 text-gray-400" />
+              </div>
+              <select
+                className="block w-full pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm appearance-none"
+                value={floorFilter}
+                onChange={(e) => setFloorFilter(e.target.value)}
+              >
+                <option value="ALL">All Floors</option>
+                {uniqueFloors.map(floor => (
+                  <option key={floor} value={floor}>{floor === 'Unknown' ? 'Unknown Floor' : `Floor ${floor}`}</option>
+                ))}
+              </select>
+            </div>
           </div>
-          <select
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm appearance-none"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="ALL">All Statuses</option>
-            <option value="AVAILABLE">Available</option>
-            <option value="OCCUPIED">Occupied</option>
-            <option value="RESERVED">Reserved</option>
-            <option value="CLEANING">Cleaning</option>
-            <option value="MAINTENANCE">Maintenance</option>
-          </select>
         </div>
       </div>
 
@@ -263,6 +311,18 @@ export default function Beds() {
                   <p className="text-xs text-amber-700 bg-amber-50 p-2 rounded border border-amber-100 mt-2">
                     Cannot manually change status. Patient is currently admitted in this bed.
                   </p>
+                )}
+                {canEditBeds && selectedBed.status === 'AVAILABLE' && (
+                  <div className="pt-3 border-t border-slate-100 mt-4">
+                    <button
+                      onClick={() => setIsManualRegModalOpen(true)}
+                      className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
+                    >
+                      <UserPlus className="w-4 h-4" />
+                      Manually Register Patient
+                    </button>
+                    <p className="text-[10px] text-slate-500 text-center mt-2">Registers a new patient and admits them directly to this bed.</p>
+                  </div>
                 )}
               </div>
 

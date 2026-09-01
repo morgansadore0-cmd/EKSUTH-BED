@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { collection, onSnapshot, query, doc, updateDoc } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { db, getCollectionName } from '../firebase/config';
 import { User, Role } from '../types';
 import { toast } from 'react-toastify';
 import { clsx } from 'clsx';
@@ -15,7 +15,7 @@ export default function Staff() {
   const { userData, isAdmin, isSuperAdmin } = useAuth();
 
   useEffect(() => {
-    const unsub = onSnapshot(query(collection(db, 'users')), (snapshot) => {
+    const unsub = onSnapshot(query(collection(db, getCollectionName('users'))), (snapshot) => {
       setStaff(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User)));
       setLoading(false);
     });
@@ -162,10 +162,9 @@ export default function Staff() {
         <StaffTable users={activeStaff} title="Active Staff Directory" />
       )}
 
-      <CreateAccountModal 
-        isOpen={isCreateModalOpen} 
-        onClose={() => setIsCreateModalOpen(false)} 
-      />
+      {isCreateModalOpen && (
+        <CreateAccountModal onClose={() => setIsCreateModalOpen(false)} />
+      )}
     </div>
   );
 }

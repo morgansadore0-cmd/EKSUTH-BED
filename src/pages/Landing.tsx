@@ -1,5 +1,7 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'react-toastify';
 import { Activity, Shield, Clock, Users, ArrowRight, LayoutDashboard, Search } from 'lucide-react';
 import logo from '../assets/images/1146_company_logo.jpg';
 import building from '../assets/images/images.jpg';
@@ -38,6 +40,19 @@ const features = [
 ];
 
 export default function Landing() {
+  const navigate = useNavigate();
+  const { loginMock } = useAuth();
+
+  const handleDemoMode = () => {
+    localStorage.setItem('demo_mode', 'true');
+    loginMock('NURSE');
+    toast.info('Interactive Demo Sandbox Launched');
+    navigate('/dashboard');
+  };
+
+  const handleLiveMode = () => {
+    localStorage.removeItem('demo_mode');
+  };
   return (
     <div className="bg-white min-h-screen font-sans">
       <header className="bg-white shadow-sm sticky top-0 z-50">
@@ -50,15 +65,15 @@ export default function Landing() {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <Link to="/login" className="text-sm font-medium text-gray-700 hover:text-emerald-700 px-3 py-2">
+            <Link to="/login" onClick={handleLiveMode} className="text-sm font-medium text-gray-700 hover:text-emerald-700 px-3 py-2">
               Staff Login
             </Link>
-            <Link
-              to="/login"
+            <button
+              onClick={handleDemoMode}
               className="inline-flex items-center justify-center rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-colors"
             >
-              Access System
-            </Link>
+              Try Demo
+            </button>
           </div>
         </nav>
       </header>
@@ -85,10 +100,17 @@ export default function Landing() {
             <div className="mt-10 flex items-center justify-center gap-x-6">
               <Link
                 to="/login"
+                onClick={handleLiveMode}
                 className="rounded-md bg-emerald-700 px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-emerald-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 transition-all flex items-center gap-2"
               >
                 Staff Login <ArrowRight className="w-4 h-4" />
               </Link>
+              <button
+                onClick={handleDemoMode}
+                className="rounded-md bg-white px-6 py-3 text-base font-semibold text-emerald-700 shadow-sm border border-emerald-200 hover:bg-emerald-50 transition-all flex items-center gap-2"
+              >
+                Interactive Demo
+              </button>
               <a href="#features" className="text-base font-semibold leading-6 text-emerald-900 hover:text-emerald-700">
                 Explore the System <span aria-hidden="true">→</span>
               </a>

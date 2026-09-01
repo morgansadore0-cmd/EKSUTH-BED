@@ -1,19 +1,19 @@
 import { collection, writeBatch, doc, getDocs } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { db, getCollectionName } from '../firebase/config';
 import { Ward, Bed, BedStatus, BedType, GenderCompatibility } from '../types';
 import { toast } from 'react-toastify';
 
 const INITIAL_WARDS = [
-  { code: 'EMR', name: 'Emergency Ward', capacity: 30, type: 'Emergency' },
-  { code: 'MED-A', name: 'Medical Ward A', capacity: 35, type: 'Medical' },
-  { code: 'MED-B', name: 'Medical Ward B', capacity: 35, type: 'Medical' },
-  { code: 'SUR-A', name: 'Surgical Ward A', capacity: 30, type: 'Surgical' },
-  { code: 'SUR-B', name: 'Surgical Ward B', capacity: 30, type: 'Surgical' },
-  { code: 'OBG', name: 'Obstetrics & Gynaecology', capacity: 30, type: 'Maternity' },
-  { code: 'PAED', name: 'Paediatrics', capacity: 25, type: 'Paediatric' },
-  { code: 'ORTHO', name: 'Orthopaedics', capacity: 25, type: 'Orthopaedic' },
-  { code: 'PRIV', name: 'Private Ward', capacity: 20, type: 'Private' },
-  { code: 'ICU', name: 'Intensive Care Unit', capacity: 20, type: 'ICU' },
+  { code: 'EMR', name: 'Emergency Ward', capacity: 30, type: 'Emergency', floor: '1' },
+  { code: 'MED-A', name: 'Medical Ward A', capacity: 35, type: 'Medical', floor: '2' },
+  { code: 'MED-B', name: 'Medical Ward B', capacity: 35, type: 'Medical', floor: '2' },
+  { code: 'SUR-A', name: 'Surgical Ward A', capacity: 30, type: 'Surgical', floor: '3' },
+  { code: 'SUR-B', name: 'Surgical Ward B', capacity: 30, type: 'Surgical', floor: '3' },
+  { code: 'OBG', name: 'Obstetrics & Gynaecology', capacity: 30, type: 'Maternity', floor: '4' },
+  { code: 'PAED', name: 'Paediatrics', capacity: 25, type: 'Paediatric', floor: '4' },
+  { code: 'ORTHO', name: 'Orthopaedics', capacity: 25, type: 'Orthopaedic', floor: '5' },
+  { code: 'PRIV', name: 'Private Ward', capacity: 20, type: 'Private', floor: '5' },
+  { code: 'ICU', name: 'Intensive Care Unit', capacity: 20, type: 'ICU', floor: '6' },
 ];
 
 const DEMO_STAFF = [
@@ -28,7 +28,7 @@ const DEMO_STAFF = [
 
 export const seedDatabase = async () => {
   try {
-    const wardsSnapshot = await getDocs(collection(db, 'wards'));
+    const wardsSnapshot = await getDocs(collection(db, getCollectionName('wards')));
     if (!wardsSnapshot.empty) {
       toast.info('Database already seeded. Wards exist.');
       return;
@@ -40,12 +40,13 @@ export const seedDatabase = async () => {
     let totalBedsCreated = 0;
 
     for (const wardData of INITIAL_WARDS) {
-      const wardRef = doc(collection(db, 'wards'));
+      const wardRef = doc(collection(db, getCollectionName('wards')));
       const ward: Ward = {
         id: wardRef.id,
         name: wardData.name,
         code: wardData.code,
         capacity: wardData.capacity,
+        floor: (wardData as any).floor || 'Unknown',
         type: wardData.type,
         createdAt: now,
         updatedAt: now,
@@ -54,7 +55,7 @@ export const seedDatabase = async () => {
 
       // Create beds for this ward
       for (let i = 1; i <= wardData.capacity; i++) {
-        const bedRef = doc(collection(db, 'beds'));
+        const bedRef = doc(collection(db, getCollectionName('beds')));
         const bedNumStr = i.toString().padStart(2, '0');
         
         let type: BedType = 'Standard';
@@ -92,7 +93,7 @@ export const seedDatabase = async () => {
     }
 
     // Seed Demo Staff Registry
-    const staffRegistrySnapshot = await getDocs(collection(db, 'staffRegistry'));
+    const staffRegistrySnapshot = await getDocs(collection(db, getCollectionName('staffRegistry')));
     if (staffRegistrySnapshot.empty) {
       for (const staffData of DEMO_STAFF) {
         const staffRef = doc(db, 'staffRegistry', staffData.staffId);

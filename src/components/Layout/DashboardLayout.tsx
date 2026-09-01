@@ -11,7 +11,7 @@ export default function DashboardLayout() {
   useMaintenanceMonitor();
 
   return (
-    <div className="h-screen bg-[#f8fafc] text-slate-800 flex font-sans overflow-hidden">
+    <div className="h-screen bg-[#f8fafc] dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex font-sans overflow-hidden">
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
       
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">

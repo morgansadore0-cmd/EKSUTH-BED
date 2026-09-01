@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { collection, query, where, onSnapshot, getDocs, setDoc, doc } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { db, getCollectionName } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-toastify';
 import { Bed } from '../types';
@@ -15,7 +15,7 @@ export function useMaintenanceMonitor() {
     let localBeds: Bed[] = [];
     
     // We only query beds currently in MAINTENANCE to minimize read operations
-    const q = query(collection(db, 'beds'), where('status', '==', 'MAINTENANCE'));
+    const q = query(collection(db, getCollectionName('beds')), where('status', '==', 'MAINTENANCE'));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
       localBeds = snapshot.docs.map(document => ({ id: document.id, ...document.data() } as Bed));

@@ -51,6 +51,7 @@ export interface Ward {
   code: string;
   capacity: number;
   type: string;
+  floor?: string;
   createdAt: number;
   updatedAt: number;
 }

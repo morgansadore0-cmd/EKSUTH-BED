@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { collection, query, where, orderBy, onSnapshot, getDocs } from 'firebase/firestore';
-import { db } from '../../firebase/config';
+import { db, getCollectionName } from '../../firebase/config';
 import { AuditLog, Allocation } from '../../types';
 import { Clock, User, Activity, AlertCircle } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -32,14 +32,14 @@ export default function BedHistoryLog({ bedId }: BedHistoryLogProps) {
       try {
         // Query audit logs for status changes related to this bed
         const auditQuery = query(
-          collection(db, 'auditLogs'),
+          collection(db, getCollectionName('auditLogs')),
           where('entityId', '==', bedId),
           where('entity', '==', 'BED')
         );
 
         // Query allocations for this bed
         const allocQuery = query(
-          collection(db, 'allocations'),
+          collection(db, getCollectionName('allocations')),
           where('bedId', '==', bedId)
         );
 

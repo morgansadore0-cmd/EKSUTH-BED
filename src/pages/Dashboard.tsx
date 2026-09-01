@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { collection, onSnapshot, query } from 'firebase/firestore';
-import { db } from '../firebase/config';
-import { Bed } from '../types';
+import { db, getCollectionName } from '../firebase/config';
+import { Bed, Ward } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { seedDatabase } from '../lib/seed';
 import { Activity, Bed as BedIcon, CheckCircle2, AlertCircle, Sparkles, XCircle } from 'lucide-react';
@@ -14,10 +14,11 @@ import StaffStats from '../components/Dashboard/StaffStats';
 export default function Dashboard() {
   const { isSuperAdmin, isAdmin } = useAuth();
   const [beds, setBeds] = useState<Bed[]>([]);
+  const [wards, setWards] = useState<Ward[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const q = query(collection(db, 'beds'));
+    const q = query(collection(db, getCollectionName('beds')));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const bedsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Bed));
       setBeds(bedsData);
@@ -27,7 +28,12 @@ export default function Dashboard() {
       toast.error("Failed to load live hospital data");
     });
 
-    return () => unsubscribe();
+    const w = query(collection(db, getCollectionName('wards')));
+    const unsubWards = onSnapshot(w, (snapshot) => {
+      setWards(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ward)));
+    });
+
+    return () => { unsubscribe(); unsubWards(); };
   }, []);
 
   const totalBeds = beds.length;
@@ -41,6 +47,17 @@ export default function Dashboard() {
   // Occupancy uses total operational beds (excluding maintenance and out of service)
   const operationalBeds = totalBeds - maintenanceBeds - outOfServiceBeds;
   const occupancyRate = operationalBeds > 0 ? Math.round((occupiedBeds / operationalBeds) * 100) : 0;
+
+
+  const departmentStats = wards.map(ward => {
+    const wardBeds = beds.filter(b => b.wardId === ward.id);
+    const available = wardBeds.filter(b => b.status === 'AVAILABLE').length;
+    const occupied = wardBeds.filter(b => b.status === 'OCCUPIED').length;
+    const total = wardBeds.length;
+    const rate = total > 0 ? Math.round((occupied / total) * 100) : 0;
+    const availableBedNumbers = wardBeds.filter(b => b.status === 'AVAILABLE').sort((a, b) => a.bedNumber.localeCompare(b.bedNumber, undefined, {numeric: true})).map(b => b.bedNumber);
+    return { name: ward.name, type: ward.type, available, occupied, total, rate, availableBedNumbers };
+  }).sort((a, b) => b.available - a.available);
 
   const chartData = [
     { name: 'Available', value: availableBeds, color: '#10b981' },
@@ -57,7 +74,7 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold text-gray-900">Bed Allocation Overview</h1>
           <p className="text-sm text-gray-500 mt-1">Live capacity of Ekiti State University Teaching Hospital</p>
         </div>
-        {isAdmin && totalBeds === 0 && !loading && (
+        {totalBeds === 0 && !loading && (
           <button 
             onClick={() => seedDatabase()}
             className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 shadow-sm transition-colors text-sm font-medium"
@@ -137,6 +154,69 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+
+          {/* Department Breakdown */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Department Capacity Breakdown</h3>
+                <p className="text-sm text-gray-500 mt-1">Available beds across all hospital wards</p>
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-gray-50 text-gray-500 font-medium">
+                  <tr>
+                    <th className="px-6 py-3">Department (Ward)</th>
+                    <th className="px-6 py-3 text-center">Type</th>
+                    <th className="px-6 py-3 text-left">Available Beds</th>
+                    <th className="px-6 py-3 text-right">Total Beds</th>
+                    <th className="px-6 py-3 text-right">Occupancy</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {departmentStats.map((dept, idx) => (
+                    <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 font-medium text-gray-900">{dept.name}</td>
+                      <td className="px-6 py-4 text-center text-gray-500">{dept.type}</td>
+                      <td className="px-6 py-4 text-left">
+                        <div className="flex flex-col gap-1.5 items-start">
+                          <span className={clsx("inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium", dept.available > 0 ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800")}>
+                            {dept.available} Available
+                          </span>
+                          {dept.available > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1 max-w-xs">
+                              {dept.availableBedNumbers.slice(0, 30).map((num, i) => (
+                                <span key={i} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] font-medium border border-gray-200">{num}</span>
+                              ))}
+                              {dept.availableBedNumbers.length > 30 && (
+                                <span className="px-1.5 py-0.5 bg-gray-50 text-gray-500 rounded text-[10px] font-medium border border-gray-200">+{dept.availableBedNumbers.length - 30} more</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-right text-gray-500">{dept.total}</td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <span className="text-gray-900">{dept.rate}%</span>
+                          <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                            <div className={clsx("h-full rounded-full", dept.rate > 90 ? "bg-red-500" : dept.rate > 75 ? "bg-orange-500" : "bg-emerald-500")} style={{ width: `${dept.rate}%` }}></div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {departmentStats.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-8 text-center text-gray-500">No departments found</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           {isAdmin && <StaffStats />}
         </>
       )}

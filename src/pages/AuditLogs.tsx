@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { db, getCollectionName } from '../firebase/config';
 import { AuditLog } from '../types';
 import { Search, Filter, ShieldAlert } from 'lucide-react';
 import { format } from 'date-fns';
@@ -16,7 +16,7 @@ export default function AuditLogs() {
 
   useEffect(() => {
     // Fetch last 500 audit logs to keep it manageable on the client
-    const q = query(collection(db, 'auditLogs'), orderBy('timestamp', 'desc'), limit(500));
+    const q = query(collection(db, getCollectionName('auditLogs')), orderBy('timestamp', 'desc'), limit(500));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const logsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AuditLog));

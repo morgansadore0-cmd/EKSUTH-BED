@@ -1,16 +1,15 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { auth, db } from '../firebase/config';
-import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
 import { User, Role } from '../types';
 
 interface AuthContextType {
-  currentUser: FirebaseUser | null;
+  currentUser: any | null;
   userData: User | null;
   loading: boolean;
   isSuperAdmin: boolean;
   isAdmin: boolean;
   hasRole: (roles: Role[]) => boolean;
+  loginMock: (role?: Role) => void;
+  logoutMock: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -20,39 +19,55 @@ const AuthContext = createContext<AuthContextType>({
   isSuperAdmin: false,
   isAdmin: false,
   hasRole: () => false,
+  loginMock: () => {},
+  logoutMock: () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
+  const [currentUser, setCurrentUser] = useState<any | null>(null);
   const [userData, setUserData] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
-      if (user) {
-        try {
-          const docRef = doc(db, 'users', user.uid);
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists()) {
-            setUserData({ id: docSnap.id, ...docSnap.data() } as User);
-          } else {
-            setUserData(null);
-          }
-        } catch (error) {
-          console.error("Error fetching user data", error);
-          setUserData(null);
-        }
-      } else {
-        setUserData(null);
+    // Check local storage for mock session
+    const mockSession = localStorage.getItem('mock_auth_session');
+    if (mockSession) {
+      try {
+        const parsed = JSON.parse(mockSession);
+        setCurrentUser({ uid: parsed.id, email: parsed.email });
+        setUserData(parsed);
+      } catch(e) {
+        // ignore
       }
-      setLoading(false);
-    });
-
-    return unsubscribe;
+    }
+    setLoading(false);
   }, []);
+
+  const loginMock = (role: Role = 'SUPER_ADMIN') => {
+    const mockData: User = {
+      id: 'mock-user-123',
+      name: 'Demo Admin',
+      email: 'admin@demo.com',
+      role: role,
+      staffId: 'DEMO-001',
+      department: 'Administration',
+      phone: '555-0192',
+      status: 'ACTIVE',
+      createdAt: Date.now(),
+      lastLogin: Date.now()
+    };
+    localStorage.setItem('mock_auth_session', JSON.stringify(mockData));
+    setCurrentUser({ uid: mockData.id, email: mockData.email });
+    setUserData(mockData);
+  };
+
+  const logoutMock = () => {
+    localStorage.removeItem('mock_auth_session');
+    setCurrentUser(null);
+    setUserData(null);
+  };
 
   const isSuperAdmin = userData?.role === 'SUPER_ADMIN';
   const isAdmin = isSuperAdmin || userData?.role === 'ADMIN';
@@ -70,6 +85,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isSuperAdmin,
     isAdmin,
     hasRole,
+    loginMock,
+    logoutMock
   };
 
   return (
