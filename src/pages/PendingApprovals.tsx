@@ -28,7 +28,7 @@ export default function PendingApprovals() {
     }
     
     try {
-      await updateDoc(doc(db, 'users', userId), { status: 'ACTIVE' });
+      await updateDoc(doc(db, getCollectionName('users'), userId), { status: 'ACTIVE' });
       toast.success("Account approved successfully");
     } catch (error) {
       console.error(error);
@@ -42,7 +42,7 @@ export default function PendingApprovals() {
     }
     if (window.confirm("Are you sure you want to reject this registration request? This action cannot be undone.")) {
       try {
-        await updateDoc(doc(db, 'users', userId), { status: 'REJECTED' });
+        await updateDoc(doc(db, getCollectionName('users'), userId), { status: 'REJECTED' });
         toast.success("Registration request rejected.");
       } catch (error) {
         console.error(error);

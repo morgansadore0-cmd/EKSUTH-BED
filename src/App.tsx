@@ -18,6 +18,10 @@ import Dashboard from './pages/Dashboard';
 import Beds from './pages/Beds';
 import Patients from './pages/Patients';
 import Allocation from './pages/Allocation';
+import Admissions from './pages/Admissions';
+import Transfers from './pages/Transfers';
+import Reports from './pages/Reports';
+import Notifications from './pages/Notifications';
 import Wards from './pages/Wards';
 import Staff from './pages/Staff';
 import PendingApprovals from './pages/PendingApprovals';
@@ -43,10 +47,10 @@ function App() {
             <Route path="wards" element={<Wards />} />
             <Route path="patients" element={<Patients />} />
             <Route path="allocation" element={<Allocation />} />
-            <Route path="admissions" element={<Placeholder />} />
-            <Route path="transfers" element={<Placeholder />} />
-            <Route path="reports" element={<Placeholder />} />
-            <Route path="notifications" element={<Placeholder />} />
+            <Route path="admissions" element={<Admissions />} />
+            <Route path="transfers" element={<Transfers />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="notifications" element={<Notifications />} />
             <Route 
               path="audit-logs" 
               element={

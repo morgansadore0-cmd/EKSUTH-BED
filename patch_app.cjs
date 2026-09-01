@@ -1,29 +1,15 @@
 const fs = require('fs');
 let code = fs.readFileSync('src/App.tsx', 'utf8');
 
-code = code.replace(
-  "import { AuthProvider } from './contexts/AuthContext';",
-  "import { AuthProvider } from './contexts/AuthContext';\nimport { ThemeProvider } from './contexts/ThemeContext';"
-);
+// Add imports
+if (!code.includes('import Admissions')) {
+  code = code.replace("import Allocation from './pages/Allocation';", "import Allocation from './pages/Allocation';\nimport Admissions from './pages/Admissions';\nimport Transfers from './pages/Transfers';\nimport Reports from './pages/Reports';\nimport Notifications from './pages/Notifications';");
+}
 
-code = code.replace(
-  "import Placeholder from './pages/Placeholder';",
-  "import Placeholder from './pages/Placeholder';\nimport Settings from './pages/Settings';"
-);
-
-code = code.replace(
-  "<AuthProvider>",
-  "<ThemeProvider>\n    <AuthProvider>"
-);
-
-code = code.replace(
-  "</AuthProvider>",
-  "</AuthProvider>\n    </ThemeProvider>"
-);
-
-code = code.replace(
-  '<Route path="settings" element={<Placeholder />} />',
-  '<Route path="settings" element={<Settings />} />'
-);
+// Replace placeholders
+code = code.replace('<Route path="admissions" element={<Placeholder />} />', '<Route path="admissions" element={<Admissions />} />');
+code = code.replace('<Route path="transfers" element={<Placeholder />} />', '<Route path="transfers" element={<Transfers />} />');
+code = code.replace('<Route path="reports" element={<Placeholder />} />', '<Route path="reports" element={<Reports />} />');
+code = code.replace('<Route path="notifications" element={<Placeholder />} />', '<Route path="notifications" element={<Notifications />} />');
 
 fs.writeFileSync('src/App.tsx', code);

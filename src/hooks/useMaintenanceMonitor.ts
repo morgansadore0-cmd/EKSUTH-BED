@@ -45,7 +45,7 @@ export function useMaintenanceMonitor() {
 
           // Optionally, persist to the notifications collection for a future Notifications center
           try {
-            await setDoc(doc(db, 'notifications', `maintenance-alert-${bed.id}`), {
+            await setDoc(doc(db, getCollectionName('notifications'), `maintenance-alert-${bed.id}`), {
               title: 'Prolonged Maintenance',
               message: `Bed ${bed.bedNumber} in Ward ${bed.wardId} has been in MAINTENANCE for over 48 hours.`,
               category: 'SYSTEM',

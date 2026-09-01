@@ -96,7 +96,7 @@ export const seedDatabase = async () => {
     const staffRegistrySnapshot = await getDocs(collection(db, getCollectionName('staffRegistry')));
     if (staffRegistrySnapshot.empty) {
       for (const staffData of DEMO_STAFF) {
-        const staffRef = doc(db, 'staffRegistry', staffData.staffId);
+        const staffRef = doc(db, getCollectionName('staffRegistry'), staffData.staffId);
         batch.set(staffRef, {
           staffId: staffData.staffId,
           fullName: staffData.name,

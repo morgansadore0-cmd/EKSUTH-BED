@@ -102,7 +102,7 @@ export default function Patients() {
     try {
       const batch = writeBatch(db);
       
-      const patientRef = doc(db, 'patients', dischargingPatient.id);
+      const patientRef = doc(db, getCollectionName('patients'), dischargingPatient.id);
       batch.update(patientRef, {
         admissionStatus: 'DISCHARGED',
         currentBedId: null,
@@ -112,7 +112,7 @@ export default function Patients() {
       });
 
       if (dischargingPatient.currentBedId) {
-        const bedRef = doc(db, 'beds', dischargingPatient.currentBedId);
+        const bedRef = doc(db, getCollectionName('beds'), dischargingPatient.currentBedId);
         batch.update(bedRef, {
           status: 'AVAILABLE',
           currentPatientId: null,

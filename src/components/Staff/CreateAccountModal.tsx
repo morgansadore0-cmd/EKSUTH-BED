@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { doc, setDoc } from 'firebase/firestore';
-import { db } from '../../firebase/config';
+import { db , getCollectionName } from '../../firebase/config';
 import { User, Role } from '../../types';
 import { toast } from 'react-toastify';
 import { X, UserPlus, Loader2 } from 'lucide-react';
@@ -43,9 +43,9 @@ export default function CreateAccountModal({ onClose }: { onClose: () => void })
         lastLogin: Date.now(),
       };
       
-      await setDoc(doc(db, 'users', mockUid), newUser);
+      await setDoc(doc(db, getCollectionName('users'), mockUid), newUser);
       
-      await setDoc(doc(db, 'staffRegistry', formData.staffId), {
+      await setDoc(doc(db, getCollectionName('staffRegistry'), formData.staffId), {
         staffId: formData.staffId,
         fullName: formData.fullName,
         email: formData.email,

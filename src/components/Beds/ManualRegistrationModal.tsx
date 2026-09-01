@@ -69,7 +69,7 @@ export default function ManualRegistrationModal({ isOpen, onClose, bed }: Manual
       batch.set(newPatientRef, newPatient);
 
       // Update bed to OCCUPIED
-      const bedRef = doc(db, 'beds', bed.id);
+      const bedRef = doc(db, getCollectionName('beds'), bed.id);
       batch.update(bedRef, {
         status: 'OCCUPIED',
         currentPatientId: newPatientRef.id,

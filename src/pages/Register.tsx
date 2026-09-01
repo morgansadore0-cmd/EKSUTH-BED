@@ -65,10 +65,10 @@ export default function Register() {
         lastLogin: Date.now()
       };
 
-      await setDoc(doc(db, 'users', mockUid), userProfile);
+      await setDoc(doc(db, getCollectionName('users'), mockUid), userProfile);
 
       // 4. Update Registry status
-      await updateDoc(doc(db, 'staffRegistry', staffRecordId), {
+      await updateDoc(doc(db, getCollectionName('staffRegistry'), staffRecordId), {
         status: 'ASSIGNED',
         linkedUserId: mockUid,
         updatedAt: Date.now()

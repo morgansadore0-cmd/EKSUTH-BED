@@ -66,7 +66,7 @@ export default function Beds() {
     
     try {
       const batch = writeBatch(db);
-      const bedRef = doc(db, 'beds', bedId);
+      const bedRef = doc(db, getCollectionName('beds'), bedId);
       
       batch.update(bedRef, {
         status: newStatus,

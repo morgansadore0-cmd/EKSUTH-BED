@@ -97,7 +97,7 @@ export default function StaffRegistryPage() {
         updatedAt: Date.now()
       };
       
-      await setDoc(doc(db, 'staffRegistry', staffId), newRecord);
+      await setDoc(doc(db, getCollectionName('staffRegistry'), staffId), newRecord);
       
       // Audit log
       const batch = writeBatch(db);
@@ -132,7 +132,7 @@ export default function StaffRegistryPage() {
 
   const handleUpdateStatus = async (id: string, staffId: string, newStatus: StaffRegistryStatus) => {
     try {
-      await updateDoc(doc(db, 'staffRegistry', id), {
+      await updateDoc(doc(db, getCollectionName('staffRegistry'), id), {
         status: newStatus,
         updatedAt: Date.now()
       });

@@ -31,7 +31,7 @@ export default function Staff() {
     }
     
     try {
-      await updateDoc(doc(db, 'users', userId), { role: newRole });
+      await updateDoc(doc(db, getCollectionName('users'), userId), { role: newRole });
       toast.success("Account role updated successfully");
     } catch (error) {
       toast.error("Failed to update role");
@@ -40,7 +40,7 @@ export default function Staff() {
 
   const handleStatusChange = async (userId: string, newStatus: 'ACTIVE' | 'SUSPENDED') => {
     try {
-      await updateDoc(doc(db, 'users', userId), { status: newStatus });
+      await updateDoc(doc(db, getCollectionName('users'), userId), { status: newStatus });
       toast.success(`Account ${newStatus.toLowerCase()}`);
     } catch (error) {
       toast.error("Failed to update status");

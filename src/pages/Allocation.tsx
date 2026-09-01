@@ -39,7 +39,7 @@ export default function Allocation() {
 
   const loadPatientDetails = async (id: string) => {
     setLoading(true);
-    const docRef = doc(db, 'patients', id);
+    const docRef = doc(db, getCollectionName('patients'), id);
     const snap = await getDoc(docRef);
     if (snap.exists()) {
       setPatient({ id: snap.id, ...snap.data() } as Patient);
@@ -137,8 +137,8 @@ export default function Allocation() {
     }
 
     setAllocating(true);
-    const bedRef = doc(db, 'beds', recommendation.bed.id);
-    const patientRef = doc(db, 'patients', patient.id);
+    const bedRef = doc(db, getCollectionName('beds'), recommendation.bed.id);
+    const patientRef = doc(db, getCollectionName('patients'), patient.id);
     const allocRef = doc(collection(db, getCollectionName('allocations')));
     const auditRef = doc(collection(db, getCollectionName('auditLogs')));
 
@@ -156,6 +156,16 @@ export default function Allocation() {
           currentPatientId: patient.id,
           updatedAt: Date.now()
         });
+
+        // Free Previous Bed if Transfer
+        if (patient.currentBedId) {
+          const oldBedRef = doc(db, getCollectionName('beds'), patient.currentBedId);
+          transaction.update(oldBedRef, {
+            status: 'CLEANING',
+            currentPatientId: null,
+            updatedAt: Date.now()
+          });
+        }
 
         // Update Patient
         transaction.update(patientRef, {
