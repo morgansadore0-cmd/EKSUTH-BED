@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { collection, onSnapshot, query, addDoc, doc, writeBatch } from 'firebase/firestore';
 import { db, getCollectionName } from '../firebase/config';
 import { Patient, Priority, Gender, BedType } from '../types';
-import { Search, Plus, X } from 'lucide-react';
+import { Search, Plus, X, Download } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-toastify';
 import { clsx } from 'clsx';
 import { useNavigate } from 'react-router-dom';
+import QuickTransferModal from '../components/Patients/QuickTransferModal';
 
 export default function Patients() {
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -14,6 +15,7 @@ export default function Patients() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [dischargingPatient, setDischargingPatient] = useState<Patient | null>(null);
+  const [transferringPatient, setTransferringPatient] = useState<Patient | null>(null);
   const { hasRole } = useAuth();
   const navigate = useNavigate();
 
@@ -97,6 +99,43 @@ export default function Patients() {
     }
   };
 
+
+  const exportToCSV = () => {
+    const admittedPatients = patients.filter(p => p.admissionStatus === 'ADMITTED');
+    if (admittedPatients.length === 0) {
+      toast.info("No admitted patients to export.");
+      return;
+    }
+    
+    const headers = ['MRN', 'Full Name', 'Age', 'Gender', 'Phone', 'Priority', 'Admission Date'];
+    const rows = admittedPatients.map(p => [
+      p.mrn,
+      `"${p.fullName}"`,
+      p.age,
+      p.gender,
+      p.phone,
+      p.priority,
+      p.admissionDate ? new Date(p.admissionDate).toLocaleString() : 'N/A'
+    ]);
+    
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(e => e.join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `admitted_patients_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    toast.success("Exported admitted patients to CSV.");
+  };
+
   const handleQuickDischarge = async () => {
     if (!dischargingPatient) return;
     try {
@@ -141,14 +180,22 @@ export default function Patients() {
           <h1 className="text-2xl font-bold text-gray-900">Patient Management</h1>
           <p className="text-sm text-gray-500 mt-1">Register and view patient records</p>
         </div>
-        {canEditPatients && (
+        <div className="flex items-center gap-3">
           <button 
-            onClick={() => setShowForm(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 shadow-sm transition-colors text-sm font-medium"
+            onClick={exportToCSV}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white text-slate-700 border border-slate-300 rounded-md hover:bg-slate-50 shadow-sm transition-colors text-sm font-medium"
           >
-            <Plus className="w-4 h-4" /> Register Patient
+            <Download className="w-4 h-4" /> Export CSV
           </button>
-        )}
+          {canEditPatients && (
+            <button 
+              onClick={() => setShowForm(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 shadow-sm transition-colors text-sm font-medium"
+            >
+              <Plus className="w-4 h-4" /> Register Patient
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
@@ -230,12 +277,20 @@ export default function Patients() {
                       ) : (
                         <div className="flex justify-end gap-2">
                           {patient.admissionStatus === 'ADMITTED' && canEditPatients && (
-                            <button
-                              onClick={() => setDischargingPatient(patient)}
-                              className="text-red-700 bg-red-50 border border-red-200 px-3 py-1.5 rounded hover:bg-red-100 transition-colors shadow-sm"
-                            >
-                              Quick Discharge
-                            </button>
+                            <>
+                              <button
+                                onClick={() => setDischargingPatient(patient)}
+                                className="text-red-700 bg-red-50 border border-red-200 px-3 py-1.5 rounded hover:bg-red-100 transition-colors shadow-sm"
+                              >
+                                Quick Discharge
+                              </button>
+                              <button
+                                onClick={() => setTransferringPatient(patient)}
+                                className="text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded hover:bg-blue-100 transition-colors shadow-sm"
+                              >
+                                Quick Transfer
+                              </button>
+                            </>
                           )}
                           <button 
                             onClick={() => navigate('/admissions')}
@@ -401,6 +456,12 @@ export default function Patients() {
             </div>
           </div>
         </div>
+      )}
+      {transferringPatient && (
+        <QuickTransferModal 
+          patient={transferringPatient} 
+          onClose={() => setTransferringPatient(null)} 
+        />
       )}
     </div>
   );

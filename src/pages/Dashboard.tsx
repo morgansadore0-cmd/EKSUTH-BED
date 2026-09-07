@@ -9,6 +9,7 @@ import { toast } from 'react-toastify';
 import { clsx } from 'clsx';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
 import MaintenanceAlert from '../components/Dashboard/MaintenanceAlert';
+import UrgentAlerts from '../components/Dashboard/UrgentAlerts';
 import StaffStats from '../components/Dashboard/StaffStats';
 
 export default function Dashboard() {
@@ -84,6 +85,7 @@ export default function Dashboard() {
         )}
       </div>
 
+      {!loading && <UrgentAlerts />}
       {!loading && <MaintenanceAlert beds={beds} />}
 
       {loading ? (
