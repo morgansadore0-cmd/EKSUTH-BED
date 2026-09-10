@@ -79,6 +79,7 @@ export interface Patient {
   currentWardId: string | null;
   admissionDate: number | null;
   dischargeDate: number | null;
+  registrationDate?: string;
   createdAt: number;
   updatedAt: number;
 }

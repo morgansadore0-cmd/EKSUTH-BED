@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, doc, writeBatch } from 'firebase/firestore';
 import { db, getCollectionName } from '../firebase/config';
 import { Patient } from '../types';
 import { Clock, UserPlus, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { clsx } from 'clsx';
 
 export default function Admissions() {
@@ -19,6 +20,39 @@ export default function Admissions() {
     });
     return () => unsubscribe();
   }, []);
+
+
+  const handleDischarge = async (patient: Patient) => {
+    if (!window.confirm(`Are you sure you want to discharge ${patient.fullName}?`)) return;
+
+    try {
+      const batch = writeBatch(db);
+      
+      const patientRef = doc(db, getCollectionName('patients'), patient.id);
+      batch.update(patientRef, {
+        admissionStatus: 'DISCHARGED',
+        currentBedId: null,
+        currentWardId: null,
+        dischargeDate: Date.now(),
+        updatedAt: Date.now()
+      });
+
+      if (patient.currentBedId) {
+        const bedRef = doc(db, getCollectionName('beds'), patient.currentBedId);
+        batch.update(bedRef, {
+          status: 'CLEANING',
+          currentPatientId: null,
+          updatedAt: Date.now()
+        });
+      }
+
+      await batch.commit();
+      toast.success(`${patient.fullName} has been discharged. Bed marked for cleaning.`);
+    } catch (error) {
+      console.error("Error discharging patient:", error);
+      toast.error("Failed to discharge patient.");
+    }
+  };
 
   const waitingPatients = patients.filter(p => p.admissionStatus === 'WAITING');
   const recentAdmissions = patients.filter(p => p.admissionStatus === 'ADMITTED').slice(0, 15);
@@ -106,14 +140,24 @@ export default function Admissions() {
                       <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center shrink-0 mt-0.5">
                         <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                       </div>
-                      <div>
-                        <p className="text-sm font-bold text-slate-900 dark:text-white">{patient.fullName}</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                          Admitted to Bed <span className="font-semibold text-slate-700 dark:text-slate-300">ID: {patient.currentBedId?.slice(0,6) || 'Unknown'}</span>
-                        </p>
-                        <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
-                          {new Date(patient.admissionDate || patient.updatedAt).toLocaleString()}
-                        </p>
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="text-sm font-bold text-slate-900 dark:text-white">{patient.fullName}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                              Admitted to Bed <span className="font-semibold text-slate-700 dark:text-slate-300">ID: {patient.currentBedId?.slice(0,6) || 'Unknown'}</span>
+                            </p>
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
+                              {new Date(patient.admissionDate || patient.updatedAt).toLocaleString()}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => handleDischarge(patient)}
+                            className="shrink-0 text-xs text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 px-2 py-1 rounded transition-colors"
+                          >
+                            Initiate Discharge
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}

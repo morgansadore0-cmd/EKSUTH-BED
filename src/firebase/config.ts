@@ -17,9 +17,15 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 // Initialize Firebase services
 export const auth = getAuth(app);
 // Initialize Firestore with offline persistence
-export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-}, "ai-studio-eksuthautomatedb-11633c3c-efde-4345-bd5a-8516ed399d58");
+let dbInstance;
+try {
+  dbInstance = initializeFirestore(app, {
+    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+  }, "ai-studio-eksuthautomatedb-11633c3c-efde-4345-bd5a-8516ed399d58");
+} catch (e) {
+  dbInstance = getFirestore(app, "ai-studio-eksuthautomatedb-11633c3c-efde-4345-bd5a-8516ed399d58");
+}
+export const db = dbInstance;
 
 export const getCollectionName = (name: string) => {
   const isDemo = localStorage.getItem('demo_mode') === 'true';

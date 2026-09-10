@@ -2,12 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { collection, onSnapshot, query, addDoc, doc, writeBatch } from 'firebase/firestore';
 import { db, getCollectionName } from '../firebase/config';
 import { Patient, Priority, Gender, BedType } from '../types';
-import { Search, Plus, X, Download } from 'lucide-react';
+import { Search, Plus, X, Download, FileText } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-toastify';
 import { clsx } from 'clsx';
 import { useNavigate } from 'react-router-dom';
 import QuickTransferModal from '../components/Patients/QuickTransferModal';
+import { generatePatientPDF } from '../lib/pdfGenerator';
 
 export default function Patients() {
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -24,6 +25,7 @@ export default function Patients() {
     fullName: '',
     gender: 'Male' as Gender,
     dob: '',
+    registrationDate: new Date().toISOString().split('T')[0],
     phone: '',
     emergencyContact: '',
     priority: 'NORMAL' as Priority,
@@ -72,6 +74,7 @@ export default function Patients() {
         currentWardId: null,
         admissionDate: null,
         dischargeDate: null,
+        registrationDate: formData.registrationDate,
         createdAt: Date.now(),
         updatedAt: Date.now()
       };
@@ -86,6 +89,7 @@ export default function Patients() {
         fullName: '',
         gender: 'Male',
         dob: '',
+        registrationDate: new Date().toISOString().split('T')[0],
         phone: '',
         emergencyContact: '',
         priority: 'NORMAL',
@@ -279,6 +283,12 @@ export default function Patients() {
                           {patient.admissionStatus === 'ADMITTED' && canEditPatients && (
                             <>
                               <button
+                                onClick={() => generatePatientPDF(patient)}
+                                className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded hover:bg-emerald-100 transition-colors shadow-sm flex items-center gap-1"
+                              >
+                                <FileText className="w-3.5 h-3.5" /> PDF Summary
+                              </button>
+                              <button
                                 onClick={() => setDischargingPatient(patient)}
                                 className="text-red-700 bg-red-50 border border-red-200 px-3 py-1.5 rounded hover:bg-red-100 transition-colors shadow-sm"
                               >
@@ -377,9 +387,15 @@ export default function Patients() {
                   </div>
                   <div className="relative flex-1 px-4 py-6 sm:px-6">
                     <form onSubmit={handleSubmit} className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Full Name</label>
-                        <input type="text" required className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 sm:text-sm" value={formData.fullName} onChange={(e) => setFormData({...formData, fullName: e.target.value})} />
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Full Name</label>
+                          <input type="text" required className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 sm:text-sm" value={formData.fullName} onChange={(e) => setFormData({...formData, fullName: e.target.value})} />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Registration Date</label>
+                          <input type="date" required className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 sm:text-sm" value={formData.registrationDate} onChange={(e) => setFormData({...formData, registrationDate: e.target.value})} />
+                        </div>
                       </div>
                       
                       <div className="grid grid-cols-2 gap-4">
