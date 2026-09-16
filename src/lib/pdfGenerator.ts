@@ -49,7 +49,8 @@ export const generatePatientPDF = async (patient: Patient) => {
       ['Full Name', patient.fullName, 'MRN', patient.mrn],
       ['Age / Gender', `${patient.age} / ${patient.gender}`, 'Phone', patient.phone],
       ['Emergency Contact', patient.emergencyContact || 'N/A', 'Priority', patient.priority],
-      ['Attending Clinician', patient.attendingClinician || 'N/A', 'Isolation Req', patient.isolationRequired ? 'Yes' : 'No']
+      ['Attending Clinician', patient.attendingClinician || 'N/A', 'Isolation Req', patient.isolationRequired ? 'Yes' : 'No'],
+      ['Diagnosis', patient.diagnosis || 'N/A', '', '']
     ];
     
     (docPdf as any).autoTable({

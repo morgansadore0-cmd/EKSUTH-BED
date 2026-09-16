@@ -31,7 +31,8 @@ export default function Patients() {
     priority: 'NORMAL' as Priority,
     requiredBedType: 'Standard' as BedType,
     isolationRequired: false,
-    attendingClinician: ''
+    attendingClinician: '',
+    diagnosis: ''
   });
 
   const canEditPatients = hasRole(['SUPER_ADMIN', 'ADMIN', 'ADMISSION_OFFICER', 'DOCTOR', 'NURSE']);
@@ -70,6 +71,7 @@ export default function Patients() {
         requiredBedType: formData.requiredBedType,
         isolationRequired: formData.isolationRequired,
         attendingClinician: formData.attendingClinician,
+        diagnosis: formData.diagnosis,
         currentBedId: null,
         currentWardId: null,
         admissionDate: null,
@@ -95,7 +97,8 @@ export default function Patients() {
         priority: 'NORMAL',
         requiredBedType: 'Standard',
         isolationRequired: false,
-        attendingClinician: ''
+        attendingClinician: '',
+        diagnosis: ''
       });
     } catch (error) {
       console.error(error);
@@ -247,6 +250,11 @@ export default function Patients() {
                       <div className="flex flex-col">
                         <span className="text-xs text-slate-900">{patient.gender}, {patient.age} yrs</span>
                         <span className="text-[10px] text-slate-500">{patient.phone}</span>
+                        {patient.diagnosis && (
+                          <span className="text-[10px] text-slate-500 truncate max-w-[150px]" title={patient.diagnosis}>
+                            Dx: {patient.diagnosis}
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
@@ -375,7 +383,36 @@ export default function Patients() {
       {showForm && (
         <div className="fixed inset-0 overflow-hidden z-50">
           <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute inset-0 bg-gray-900 bg-opacity-75 transition-opacity" onClick={() => setShowForm(false)} />
+            <div className="absolute inset-0 bg-gray-900 bg-opacity-80 transition-opacity backdrop-blur-sm" onClick={() => setShowForm(false)} />
+            
+            {/* Informational write-up on the left side of the slide-over */}
+            <div className="hidden lg:flex absolute inset-y-0 left-0 right-auto w-[calc(100%-28rem)] items-center justify-center p-12 pointer-events-none">
+              <div className="text-white space-y-6 max-w-lg">
+                <div className="inline-flex items-center gap-2 bg-emerald-500/20 text-emerald-300 px-3 py-1 rounded-full text-sm font-medium border border-emerald-500/30">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  Secure Registration
+                </div>
+                <h2 className="text-4xl font-bold tracking-tight">Patient Intake Portal</h2>
+                <p className="text-lg text-slate-300 leading-relaxed">
+                  Please ensure all patient information is entered accurately. 
+                  This data directly impacts clinical bed allocation, priority triaging, 
+                  and the generation of official admission medical records.
+                </p>
+                <div className="grid grid-cols-2 gap-6 pt-6 border-t border-slate-700/50">
+                  <div>
+                    <h4 className="text-emerald-400 font-semibold mb-1">Privacy First</h4>
+                    <p className="text-sm text-slate-400">All data is encrypted and securely stored in compliance with medical data regulations.</p>
+                  </div>
+                  <div>
+                    <h4 className="text-emerald-400 font-semibold mb-1">Instant Sync</h4>
+                    <p className="text-sm text-slate-400">Records are immediately synchronized across all hospital wards and clinician devices.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
             <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
               <div className="pointer-events-auto w-screen max-w-md">
                 <div className="flex h-full flex-col overflow-y-scroll bg-white shadow-xl">
@@ -426,6 +463,11 @@ export default function Patients() {
                             <option value="CRITICAL">Critical</option>
                           </select>
                         </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Diagnosis / Chief Complaint</label>
+                        <input type="text" required className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 sm:text-sm" value={formData.diagnosis} onChange={(e) => setFormData({...formData, diagnosis: e.target.value})} />
                       </div>
 
                       <div>

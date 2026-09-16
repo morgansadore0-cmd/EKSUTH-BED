@@ -75,6 +75,7 @@ export interface Patient {
   requiredBedType: BedType | null;
   isolationRequired: boolean;
   attendingClinician: string;
+  diagnosis?: string;
   currentBedId: string | null;
   currentWardId: string | null;
   admissionDate: number | null;
